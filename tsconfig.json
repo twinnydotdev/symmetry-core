@@ -1,0 +1,19 @@
+{
+  "compilerOptions": {
+    "target": "ES2018",
+    "module": "CommonJS",
+    "outDir": ".",
+    "rootDir": "src",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "lib": ["ES2018", "DOM", "DOM.Iterable"],
+    "moduleResolution": "node"
+  },
+  "files": [
+    "global.d.ts"
+  ],
+  "include": ["global.d.ts"],
+  "exclude": ["node_modules"],
+}

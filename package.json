@@ -1,0 +1,21 @@
+{
+  "name": "symmetry-core",
+  "version": "1.0.0",
+  "description": "Symmetry core",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc"
+  },
+  "keywords": [
+    "symmetry",
+    "twinny",
+    "p2p",
+    "ai",
+    "decentralised",
+    "network"
+  ],
+  "author": "rjmacarthy",
+  "license": "MIT",
+  "devDependencies": { },
+  "dependencies": { }
+}
