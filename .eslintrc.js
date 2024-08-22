@@ -7,6 +7,9 @@ module.exports = {
   ],
   env: {
     node: true,
+    jest: true,
   },
-  rules: {},
+  rules: {
+    // You can add custom rules here
+  },
 };
