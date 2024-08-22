@@ -2,7 +2,7 @@
   "name": "symmetry-core",
   "version": "1.0.3",
   "description": "",
-  "main": "index.js",
+  "main": "dist/index.js",
   "author": "rjmacarthy",
   "license": "ISC",
   "keywords": [

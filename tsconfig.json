@@ -17,12 +17,12 @@
     "files": true
   },
   "files": [
-    "global.d.ts"
+    "src/index.d.ts"
   ],
   "jest": {
     "preset": "ts-jest",
     "testEnvironment": "node"
   },
-  "include": ["src/**/*", "__tests__/**/*", "global.d.ts"],
+  "include": ["src/**/*", "src/index.d.ts"],
   "exclude": ["node_modules"],
 }
