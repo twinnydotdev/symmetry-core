@@ -13,6 +13,11 @@
     "decentralised",
     "network"
   ],
+  "files": [
+    "dist",
+    "LICENSE",
+    "README.md"
+  ],
   "scripts": {
     "test": "jest",
     "build": "tsc",
@@ -20,7 +25,8 @@
     "start": "node dist/symmetry.js",
     "dev": "ts-node src/symmetry.ts",
     "debug": "ts-node --inspect src/symmetry.ts",
-    "lint": "eslint . --ext .ts,.js --fix"
+    "lint": "eslint . --ext .ts,.js --fix",
+    "prepublishOnly": "npm run build"
   },
   "dependencies": {
     "chalk": "^4.1.2",
