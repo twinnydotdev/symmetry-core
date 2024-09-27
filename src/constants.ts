@@ -19,6 +19,7 @@ export const serverMessageKeys = {
   requestProvider: "requestProvider",
   sessionValid: "sessionValid",
   verifySession: "verifySession",
+  rewardAdded: "rewardAdded",
 } as const;
 
 export const apiProviders = {
