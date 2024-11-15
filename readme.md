@@ -68,6 +68,7 @@ const provider = new SymmetryProvider(config);
 - `serverKey`: The unique key for connecting to the Symmetry server.
 - `userSecret`: The secret key for user authentication and points tracking.
 - `systemMessage`: An optional system message for each conversation.
+- `userSecret`: The secret key for user authentication and points tracking.
 
 Adjust these settings according to your preferences and setup.
 
