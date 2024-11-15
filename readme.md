@@ -44,7 +44,8 @@ const config = {
   path: "/home/twinnydotdev/.config/symmetry/data",
   public: true,
   serverKey: "4b4a9cc325d134dee6679e9407420023531fd7e96c563f6c5d00fd5549b77435",
-  systemMessage: "I'm a system message"
+  systemMessage: "I'm a system message",
+  userSecret: "mystrongpassword"
 };
 
 const provider = new SymmetryProvider(config);
