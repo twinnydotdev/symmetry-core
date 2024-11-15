@@ -66,9 +66,8 @@ const provider = new SymmetryProvider(config);
 - `path`: The local path where Symmetry will store its configuration and data files.
 - `public`: Whether this provider is publicly accessible on the Symmetry network.
 - `serverKey`: The unique key for connecting to the Symmetry server.
-- `userSecret`: The secret key for user authentication and points tracking.
+- `userSecret`: The secret key for user uniqueness and points tracking.
 - `systemMessage`: An optional system message for each conversation.
-- `userSecret`: The secret key for user authentication and points tracking.
 
 Adjust these settings according to your preferences and setup.
 
