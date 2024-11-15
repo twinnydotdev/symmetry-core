@@ -4,6 +4,7 @@ import chalk from "chalk";
 import Hyperswarm, { SwarmOptions } from "hyperswarm";
 import crypto from "hypercore-crypto";
 import fs from "node:fs";
+import yaml from "js-yaml";
 import cryptoLib from "crypto"; // Node's built-in crypto library
 
 import { ConfigManager } from "./config";
@@ -35,10 +36,9 @@ export class SymmetryProvider {
   }
 
   async init(): Promise<void> {
-    const userSecret = this._config.get("userSecret");
-    const seed = userSecret ? userSecret : cryptoLib.randomBytes(32);
+    const userSecret = await this.getOrCreateUserSecret();
     const keyPair = crypto.keyPair(
-      cryptoLib.createHash("sha256").update(seed).digest()
+      cryptoLib.createHash("sha256").update(userSecret).digest()
     );
     this._providerSwarm = new Hyperswarm({
       maxConnections: this._config.get("maxConnections"),
@@ -83,6 +83,27 @@ export class SymmetryProvider {
         this._providerConnections = Math.max(0, this._providerConnections - 1);
       }
     });
+  }
+
+  async getOrCreateUserSecret() {
+    const userSecret = this._config.get("userSecret");
+
+    if (userSecret) return userSecret;
+
+    const newSecret = crypto.randomBytes(32).toString("hex");
+
+    logger.info(chalk.white(`🔒 Secret not created, writing new secret to config file...`));
+
+    await fs.promises.writeFile(
+      this._config.getConfigPath(),
+      yaml.dump({
+        ...this._config.getAll(),
+        userSecret: newSecret,
+      }),
+      "utf8"
+    );
+
+    return newSecret;
   }
 
   async destroySwarms() {

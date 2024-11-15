@@ -4,12 +4,18 @@ import yaml from "js-yaml";
 
 export class ConfigManager {
   private config: ProviderConfig;
+  private configPath: string
 
   constructor(configPath: string) {
     const configFile = fs.readFileSync(configPath, "utf8");
     const config = yaml.load(configFile) as ProviderConfig;
+    this.configPath = configPath
     this.config = config
     this.validate();
+  }
+
+  public getConfigPath () {
+    return this.configPath;
   }
 
   public getAll () {
