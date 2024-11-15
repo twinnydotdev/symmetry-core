@@ -31,7 +31,6 @@ jest.mock("js-yaml", () => ({
   load: jest.fn(),
 }));
 
-
 describe("Symmetry", () => {
   let writer: SymmetryProvider;
   const mockConfig = {
@@ -48,6 +47,7 @@ describe("Symmetry", () => {
     public: false,
     serverKey: "test-server-key",
     systemMessage: "test-system-message",
+    userSecret: "arse",
   };
 
   beforeEach(() => {
