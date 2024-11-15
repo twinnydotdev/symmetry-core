@@ -3,14 +3,14 @@ import { serverMessageKeys } from "./constants";
 
 export interface ProviderConfig {
   apiHostname: string;
-  dataCollectionEnabled: boolean;
   apiKey?: string;
   apiPath: string;
   apiPort: number;
   apiProtocol: string;
   apiProvider: string;
-  discoveryKey: string;
+  dataCollectionEnabled: boolean;
   key: string;
+  keyPath: string;
   maxConnections: number;
   modelName: string;
   name: string;
@@ -19,6 +19,7 @@ export interface ProviderConfig {
   public: boolean;
   serverKey: string;
   systemMessage: string;
+  userSecret: string;
 }
 
 export interface ProviderMessage<T = unknown> {

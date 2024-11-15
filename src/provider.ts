@@ -1,9 +1,10 @@
 import { PassThrough, Readable } from "node:stream";
 import { pipeline } from "stream/promises";
 import chalk from "chalk";
-import Hyperswarm from "hyperswarm";
+import Hyperswarm, { SwarmOptions } from "hyperswarm";
 import crypto from "hypercore-crypto";
 import fs from "node:fs";
+import cryptoLib from "crypto"; // Node's built-in crypto library
 
 import { ConfigManager } from "./config";
 import {
@@ -34,12 +35,14 @@ export class SymmetryProvider {
   }
 
   async init(): Promise<void> {
+    const userSecret = this._config.get("userSecret");
+    const seed = userSecret ? userSecret : cryptoLib.randomBytes(32);
+    const keyPair = crypto.keyPair(
+      cryptoLib.createHash("sha256").update(seed).digest()
+    );
     this._providerSwarm = new Hyperswarm({
       maxConnections: this._config.get("maxConnections"),
     });
-    const keyPair = crypto.keyPair(
-      Buffer.alloc(32).fill(this._config.get("name"))
-    );
     this._discoveryKey = crypto.discoveryKey(keyPair.publicKey);
     const discovery = this._providerSwarm.join(this._discoveryKey, {
       server: true,
@@ -64,7 +67,10 @@ export class SymmetryProvider {
         chalk.white(`🔑 Server key: ${this._config.get("serverKey")}`)
       );
       logger.info(chalk.white("🔗 Joining server, please wait."));
-      this.joinServer();
+      this.joinServer({
+        keyPair,
+        maxConnections: this._config.get("maxConnections"),
+      });
     }
 
     process.on("SIGINT", async () => {
@@ -153,11 +159,11 @@ export class SymmetryProvider {
       logger.info(chalk.white(`🔗 Test call successful!`));
     };
 
-    setTimeout(() => testCall(), PROVIDER_HELLO_TIMEOUT)
+    setTimeout(() => testCall(), PROVIDER_HELLO_TIMEOUT);
   }
 
-  async joinServer(): Promise<void> {
-    this._serverSwarm = new Hyperswarm();
+  async joinServer(opts?: SwarmOptions): Promise<void> {
+    this._serverSwarm = new Hyperswarm(opts);
     const serverKey = Buffer.from(this._config.get("serverKey"));
     this._serverSwarm.join(crypto.discoveryKey(serverKey), {
       client: true,
