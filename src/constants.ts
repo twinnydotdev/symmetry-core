@@ -12,8 +12,6 @@ export const serverMessageKeys = {
   joinAck: "joinAck",
   leave: "leave",
   newConversation: "newConversation",
-  ping: "ping",
-  pong: "pong",
   providerDetails: "providerDetails",
   reportCompletion: "reportCompletion",
   requestProvider: "requestProvider",

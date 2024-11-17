@@ -226,9 +226,6 @@ export class SymmetryProvider {
                 data.data as { message: string; signature: { data: string } }
               );
               break;
-            case serverMessageKeys.ping:
-              this._serverPeer?.write(createMessage(serverMessageKeys.pong));
-              break;
           }
         }
       });
