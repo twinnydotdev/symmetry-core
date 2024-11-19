@@ -226,6 +226,12 @@ export class SymmetryProvider {
                 data.data as { message: string; signature: { data: string } }
               );
               break;
+            case serverMessageKeys.inference:
+                this.handleInferenceRequest(
+                  data as unknown as ProviderMessage<InferenceRequest>,
+                  peer
+                );
+                break;
           }
         }
       });
@@ -309,7 +315,6 @@ export class SymmetryProvider {
     data: ProviderMessage<InferenceRequest>,
     peer: Peer
   ): Promise<void> {
-    const emitterKey = data.data.key;
     const messages = this.getMessagesWithSystem(data?.data.messages);
     const req = this.buildStreamRequest(messages);
 
@@ -343,12 +348,6 @@ export class SymmetryProvider {
       let completion = "";
 
       const provider = this._config.get("apiProvider");
-
-      peer.write(
-        JSON.stringify({
-          symmetryEmitterKey: emitterKey,
-        })
-      );
 
       const peerPipeline = pipeline(peerStream, async function (source) {
         for await (const chunk of source) {
