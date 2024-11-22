@@ -130,6 +130,7 @@ export interface Peer {
   write: (value: string) => boolean;
   on: (event: string, listener: (...args: any[]) => void) => this;
   once: (event: string, listener: (...args: any[]) => void) => this;
+  destroy: VoidFunction;
   writable: boolean;
   key: string;
   discovery_key: string;
