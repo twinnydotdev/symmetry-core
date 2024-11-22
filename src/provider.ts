@@ -92,7 +92,9 @@ export class SymmetryProvider {
 
     const newSecret = crypto.randomBytes(32).toString("hex");
 
-    logger.info(chalk.white(`🔒 Secret not created, writing new secret to config file...`));
+    logger.info(
+      chalk.white(`🔒 Secret not created, writing new secret to config file...`)
+    );
 
     await fs.promises.writeFile(
       this._config.getConfigPath(),
@@ -176,8 +178,6 @@ export class SymmetryProvider {
         );
         throw error;
       }
-
-      logger.info(chalk.white(`🔗 Test call successful!`));
     };
 
     setTimeout(() => testCall(), PROVIDER_HELLO_TIMEOUT);
@@ -227,11 +227,23 @@ export class SymmetryProvider {
               );
               break;
             case serverMessageKeys.inference:
-                this.handleInferenceRequest(
-                  data as unknown as ProviderMessage<InferenceRequest>,
-                  peer
-                );
-                break;
+              logger.info(
+                chalk.white(`🔗 Received inference request from server.`)
+              );
+              this.handleInferenceRequest(
+                data as unknown as ProviderMessage<InferenceRequest>,
+                peer
+              );
+              break;
+            case serverMessageKeys.healthCheck:
+              logger.info(
+                chalk.white(`🔗 Received health check request from server.`)
+              );
+              this.handleInferenceRequest(
+                data as unknown as ProviderMessage<InferenceRequest>,
+                peer
+              );
+              break;
           }
         }
       });
@@ -302,12 +314,19 @@ export class SymmetryProvider {
 
   private getMessagesWithSystem(messages: Message[]): Message[] {
     const systemMessage = this._config.get("systemMessage");
-    if (messages.length === 2 && systemMessage) {
-      messages.unshift({
-        role: "system",
-        content: systemMessage,
-      });
+
+    const hasSystem = messages.some((m) => m.role === "system");
+
+    if (systemMessage && !hasSystem) {
+      return [
+        {
+          role: "system",
+          content: systemMessage,
+        },
+        ...messages,
+      ];
     }
+
     return messages;
   }
 

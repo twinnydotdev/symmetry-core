@@ -7,6 +7,7 @@ export const serverMessageKeys = {
   conectionSize: "conectionSize",
   heartbeat: "heartbeat",
   inference: "inference",
+  healthCheck: "healthCheck",
   inferenceEnded: "inferenceEnded",
   join: "join",
   joinAck: "joinAck",
