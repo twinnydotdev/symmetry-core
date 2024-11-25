@@ -7,7 +7,6 @@ export const serverMessageKeys = {
   conectionSize: "conectionSize",
   heartbeat: "heartbeat",
   inference: "inference",
-  healthCheck: "healthCheck",
   inferenceEnded: "inferenceEnded",
   join: "join",
   joinAck: "joinAck",
@@ -18,7 +17,6 @@ export const serverMessageKeys = {
   requestProvider: "requestProvider",
   sessionValid: "sessionValid",
   verifySession: "verifySession",
-  rewardAdded: "rewardAdded",
 } as const;
 
 export const apiProviders = {

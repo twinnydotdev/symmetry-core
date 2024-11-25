@@ -212,6 +212,8 @@ export class SymmetryProvider {
         })
       );
 
+      this.startHeartBeat();
+
       this._serverPeer.on("data", async (buffer: Buffer) => {
         if (!buffer) return;
 
@@ -235,19 +237,16 @@ export class SymmetryProvider {
                 peer
               );
               break;
-            case serverMessageKeys.healthCheck:
-              logger.info(
-                chalk.white(`🔗 Received health check request from server.`)
-              );
-              this.handleInferenceRequest(
-                data as unknown as ProviderMessage<InferenceRequest>,
-                peer
-              );
-              break;
           }
         }
       });
     });
+  }
+
+  startHeartBeat() {
+    setInterval(() => {
+      this._serverPeer?.write(createMessage(serverMessageKeys.heartbeat));
+    }, 10_000); // Send heartbeat every 10 seconds
   }
 
   getServerPublicKey(serverKeyHex: string): Buffer {
