@@ -209,6 +209,7 @@ export class SymmetryProvider {
         createMessage(serverMessageKeys.join, {
           ...this._config.getAll(),
           discoveryKey: this._discoveryKey?.toString("hex"),
+          apiKey: '',
         })
       );
 
@@ -246,7 +247,7 @@ export class SymmetryProvider {
   startHeartBeat() {
     setInterval(() => {
       this._serverPeer?.write(createMessage(serverMessageKeys.heartbeat));
-    }, 10_000); // Send heartbeat every 10 seconds
+    }, 10_000);
   }
 
   getServerPublicKey(serverKeyHex: string): Buffer {
