@@ -209,7 +209,7 @@ export class SymmetryProvider {
         createMessage(serverMessageKeys.join, {
           ...this._config.getAll(),
           discoveryKey: this._discoveryKey?.toString("hex"),
-          apiKey: '',
+          apiKey: "",
         })
       );
 
@@ -334,6 +334,7 @@ export class SymmetryProvider {
     data: ProviderMessage<InferenceRequest>,
     peer: Peer
   ): Promise<void> {
+    this._serverPeer?.write(createMessage(serverMessageKeys.inference));
     const messages = this.getMessagesWithSystem(data?.data.messages);
     const req = this.buildStreamRequest(messages);
 
