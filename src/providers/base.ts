@@ -93,7 +93,8 @@ export abstract class BaseProvider {
       );
     } catch (error) {
       logger.error(
-        `Failed to create config file: ${error instanceof Error ? error.message : "Unknown error"
+        `Failed to create config file: ${
+          error instanceof Error ? error.message : "Unknown error"
         }`
       );
       throw error;
@@ -149,11 +150,8 @@ export abstract class BaseProvider {
       const response = await fetch(
         `${this.serverConfig.apiProtocol}://${this.serverConfig.apiHostname}:${this.serverConfig.apiPort}${this.serverConfig.apiHealthPath}`
       );
-      if (!response.ok) return null;
 
-      const models = await this.getModels();
-
-      return models.length ? this.serverConfig : null;
+      return response.ok ? this.serverConfig : null;
     } catch {
       return null;
     }

@@ -1,5 +1,5 @@
 import { logger } from "../logger";
-import { OpenAIModel, ProviderConfig } from "../types";
+import { ProviderConfig } from "../types";
 import { BaseProvider } from "./base";
 
 export class OpenWebUIProvider extends BaseProvider {
@@ -11,23 +11,6 @@ export class OpenWebUIProvider extends BaseProvider {
     apiHealthPath: "/api/models",
     apiModelsPath: "/api/models",
   } as ProviderConfig;
-
-  async getModels(): Promise<OpenAIModel[]> {
-    try {
-      const response = await fetch(
-        `${this.serverConfig.apiProtocol}://${this.serverConfig.apiHostname}:${this.serverConfig.apiPort}${this.serverConfig.apiModelsPath}`
-      );
-      const data = await response.json();
-      return data.map((model: OpenAIModel) => ({
-        id: model.id,
-        object: "model",
-        owned_by: "local",
-        created: Date.now(),
-      }));
-    } catch {
-      return [];
-    }
-  }
 
   async setup(): Promise<void> {
     const server = await this.detectServer();
