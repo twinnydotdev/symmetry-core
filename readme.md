@@ -55,7 +55,7 @@ const provider = new SymmetryProvider(config);
 
 - `apiHostname`: The hostname of the API server.
 - `apiKey`: The API key for authentication (if required).
-- `apiPath`: The endpoint path for chat completions.
+- `apiChatPath`: The endpoint path for chat completions.
 - `apiPort`: The port number on which the API server is listening.
 - `apiProtocol`: The protocol used to communicate with the API server.
 - `apiProvider`: The name of the API provider.
@@ -63,7 +63,7 @@ const provider = new SymmetryProvider(config);
 - `maxConnections`: The maximum number of connections.
 - `modelName`: The name and version of the AI model to use.
 - `name`: Your chosen name as a provider on the Symmetry network.
-- `path`: The local path where Symmetry will store its configuration and data files.
+- `dataPath`: The local path where Symmetry will store its configuration and data files.
 - `public`: Whether this provider is publicly accessible on the Symmetry network.
 - `serverKey`: The unique key for connecting to the Symmetry server.
 - `userSecret`: The secret key for user uniqueness and points tracking.
