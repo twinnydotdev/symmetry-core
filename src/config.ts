@@ -24,13 +24,13 @@ export class ConfigManager {
 
   private validate(): void {
     const requiredFields: (keyof ProviderConfig)[] = [
+      "apiChatPath",
       "apiHostname",
-      "apiPath",
       "apiPort",
       "apiProtocol",
       "apiProvider",
+      "dataPath",
       "modelName",
-      "path",
       "public",
       "serverKey",
     ];

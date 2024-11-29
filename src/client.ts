@@ -18,7 +18,7 @@ import { logger } from "./logger";
 import { Peer, ProviderMessage, InferenceRequest, Message } from "./types";
 import { PROVIDER_HELLO_TIMEOUT, serverMessageKeys } from "./constants";
 
-export class SymmetryProvider {
+export class SymmetryClient {
   private _challenge: Buffer | null = null;
   private _config: ConfigManager;
   private _conversationIndex = 0;
@@ -119,7 +119,7 @@ export class SymmetryProvider {
       const testMessages: Message[] = [
         { role: "user", content: "Hello, this is a test message." },
       ];
-      const req = this.buildStreamRequest(testMessages);
+      const req = this.buildChatStreamRequest(testMessages);
 
       if (!req) {
         logger.error(chalk.red("❌ Failed to build test request"));
@@ -336,7 +336,7 @@ export class SymmetryProvider {
   ): Promise<void> {
     this._serverPeer?.write(createMessage(serverMessageKeys.inference));
     const messages = this.getMessagesWithSystem(data?.data.messages);
-    const req = this.buildStreamRequest(messages);
+    const req = this.buildChatStreamRequest(messages);
 
     if (!req) return;
 
@@ -412,7 +412,7 @@ export class SymmetryProvider {
     messages: Message[]
   ) {
     fs.writeFile(
-      `${this._config.get("path")}/${peer.publicKey.toString("hex")}-${
+      `${this._config.get("dataPath")}/${peer.publicKey.toString("hex")}-${
         this._conversationIndex
       }.json`,
       JSON.stringify([
@@ -428,11 +428,11 @@ export class SymmetryProvider {
     );
   }
 
-  private buildStreamRequest(messages: Message[]) {
+  private buildChatStreamRequest(messages: Message[]) {
     const requestOptions = {
       hostname: this._config.get("apiHostname"),
       port: Number(this._config.get("apiPort")),
-      path: this._config.get("apiPath"),
+      path: this._config.get("apiChatPath"),
       protocol: this._config.get("apiProtocol"),
       method: "POST",
       headers: {
@@ -451,4 +451,4 @@ export class SymmetryProvider {
   }
 }
 
-export default SymmetryProvider;
+export default SymmetryClient;

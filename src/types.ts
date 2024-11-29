@@ -2,20 +2,20 @@
 import { serverMessageKeys } from "./constants";
 
 export interface ProviderConfig {
+  apiBasePath?: string;
+  apiChatPath?: string;
+  apiHealthPath?: string;
   apiHostname: string;
   apiKey?: string;
-  apiPath: string;
+  apiModelsPath?: string;
   apiPort: number;
   apiProtocol: string;
   apiProvider: string;
   dataCollectionEnabled: boolean;
-  key: string;
-  keyPath: string;
   maxConnections: number;
   modelName: string;
   name: string;
-  path: string;
-  port: number;
+  dataPath: string;
   public: boolean;
   serverKey: string;
   systemMessage: string;
@@ -242,4 +242,16 @@ export interface StreamResponse {
       }
     }
   ]
+}
+
+export interface OpenAIModel {
+  id: string;
+  object: string;
+  created: number;
+  owned_by: string;
+}
+
+export interface OpenAIModelResponse {
+  object: string;
+  data: OpenAIModel[];
 }
