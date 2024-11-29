@@ -1,4 +1,4 @@
-import { SymmetryProvider } from "../src/provider";
+import { SymmetryClient } from "../src/client";
 import yaml from "js-yaml";
 
 jest.mock("hyperswarm", () => {
@@ -32,13 +32,14 @@ jest.mock("js-yaml", () => ({
 }));
 
 describe("Symmetry", () => {
-  let writer: SymmetryProvider;
+  let client: SymmetryClient;
   const mockConfig = {
     path: "/test/path",
     temperature: 1,
     apiHostname: "test.api.com",
     apiPort: 443,
-    apiPath: "/v1/chat",
+    apiChatPath: "/v1/chat",
+    dataPath: "",
     apiProtocol: "https",
     apiKey: "test-api-key",
     apiProvider: "test-provider",
@@ -53,10 +54,10 @@ describe("Symmetry", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     (yaml.load as jest.Mock).mockReturnValue(mockConfig);
-    writer = new SymmetryProvider("mock-config.yaml");
+    client = new SymmetryClient("mock-config.yaml");
   });
 
   test("init method sets up the writer correctly", async () => {
-    await writer.init();
+    await client.init();
   });
 });
