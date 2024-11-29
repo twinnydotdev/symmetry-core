@@ -11,24 +11,6 @@ export class LMStudioProvider extends BaseProvider {
     apiHealthPath: "/api/v0/models",
   } as ProviderConfig;
 
-  async detectServer(): Promise<ProviderConfig | null> {
-    try {
-      const isPortOpen = await this.checkPort(this.serverConfig.apiPort);
-      if (!isPortOpen) return null;
-
-      const response = await fetch(
-        `${this.serverConfig.apiProtocol}://${this.serverConfig.apiHostname}:${this.serverConfig.apiPort}${this.serverConfig.apiHealthPath}`
-      );
-      if (!response.ok) return null;
-
-      const models = await this.getModels();
-
-      return models ? this.serverConfig : null;
-    } catch {
-      return null;
-    }
-  }
-
   async setup(): Promise<void> {
     const server = await this.detectServer();
     if (!server) {

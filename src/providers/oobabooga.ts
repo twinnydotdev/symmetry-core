@@ -12,26 +12,6 @@ export class OobaboogaProvider extends BaseProvider {
     apiModelsPath: "/v1/models",
   } as ProviderConfig;
 
-  async detectServer(): Promise<ProviderConfig | null> {
-    try {
-      const isPortOpen = await this.checkPort(this.serverConfig.apiPort);
-      if (!isPortOpen) return null;
-
-      const response = await fetch(
-        `${this.serverConfig.apiProtocol}://${this.serverConfig.apiHostname}${this.serverConfig.apiPort}${this.serverConfig.apiHealthPath}`
-      );
-      if (!response.ok) return null;
-
-      const models = await this.getModels();
-
-      console.log(models);
-
-      return models.length ? this.serverConfig : null;
-    } catch {
-      return null;
-    }
-  }
-
   async getModels(): Promise<OpenAIModel[]> {
     try {
       const response = await fetch(

@@ -78,7 +78,7 @@ export abstract class BaseProvider {
     }
   }
 
-  protected async createConfig(server: ProviderConfig): Promise<void> {
+  protected async createConfig(server: Partial<ProviderConfig>): Promise<void> {
     const configDir = path.join(BaseProvider.DEFAULT_CONFIG_PATH);
     const dataDir = path.join(configDir, "data");
     const config = this.generateConfig(server, dataDir);
@@ -100,7 +100,7 @@ export abstract class BaseProvider {
     }
   }
 
-  private generateConfig(server: ProviderConfig, dataDir: string) {
+  private generateConfig(server: Partial<ProviderConfig>, dataDir: string) {
     return {
       name: `symmetry-${server.name}`,
       public: true,
@@ -141,6 +141,23 @@ export abstract class BaseProvider {
     return "gpt-3.5-turbo";
   }
 
-  abstract detectServer(): Promise<Partial<ProviderConfig> | null>;
+  async detectServer(): Promise<Partial<ProviderConfig> | null> {
+    try {
+      const isPortOpen = await this.checkPort(this.serverConfig.apiPort);
+      if (!isPortOpen) return null;
+
+      const response = await fetch(
+        `${this.serverConfig.apiProtocol}://${this.serverConfig.apiHostname}:${this.serverConfig.apiPort}${this.serverConfig.apiHealthPath}`
+      );
+      if (!response.ok) return null;
+
+      const models = await this.getModels();
+
+      return models.length ? this.serverConfig : null;
+    } catch {
+      return null;
+    }
+  }
+
   abstract setup(): Promise<void>;
 }
