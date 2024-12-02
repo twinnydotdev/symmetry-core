@@ -77,7 +77,7 @@ Contributions are welcome! Please submit your pull requests to the [GitHub repos
 
 ## License
 
-This project is licensed under the [MIT License](https://github.com/twinnydotdev/symmetry-core/blob/master/LICENCE).
+This project is licensed under the [Apache 2.0 License](https://github.com/twinnydotdev/symmetry-core/blob/master/LICENCE).
 
 ## Support
 
