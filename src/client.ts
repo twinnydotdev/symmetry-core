@@ -1,5 +1,4 @@
 import { PassThrough, Readable } from "node:stream";
-import { pipeline } from "stream/promises";
 import chalk from "chalk";
 import Hyperswarm, { SwarmOptions } from "hyperswarm";
 import crypto from "hypercore-crypto";
@@ -15,8 +14,17 @@ import {
   safeParseStreamResponse,
 } from "./utils";
 import { logger } from "./logger";
-import { Peer, ProviderMessage, InferenceRequest, Message } from "./types";
+import {
+  Peer,
+  ProviderMessage,
+  InferenceRequest,
+  Message,
+  StreamMetrics,
+} from "./types";
 import { PROVIDER_HELLO_TIMEOUT, serverMessageKeys } from "./constants";
+import { ReadableStream } from "stream/web";
+import { pipeline } from "node:stream/promises";
+import { StreamMetricsCollector } from "./metrics";
 
 export class SymmetryClient {
   private _challenge: Buffer | null = null;
@@ -334,7 +342,14 @@ export class SymmetryClient {
     data: ProviderMessage<InferenceRequest>,
     peer: Peer
   ): Promise<void> {
+    const streamMetricsCollector = new StreamMetricsCollector({
+      metricsInterval: 10,
+      maxTimeGap: 5000,
+      windowSize: 100,
+    });
+
     this._serverPeer?.write(createMessage(serverMessageKeys.inference));
+
     const messages = this.getMessagesWithSystem(data?.data.messages);
     const req = this.buildChatStreamRequest(messages);
 
@@ -361,24 +376,32 @@ export class SymmetryClient {
         throw new Error("Failed to get a ReadableStream from the response");
       }
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const responseStream = Readable.fromWeb(response.body as any);
+      const responseStream = Readable.fromWeb(
+        response.body as ReadableStream<Uint8Array>
+      );
       const peerStream = new PassThrough();
       responseStream.pipe(peerStream);
       let completion = "";
+      const metrics: StreamMetrics[] = [];
 
       const provider = this._config.get("apiProvider");
 
       const peerPipeline = pipeline(peerStream, async function (source) {
         for await (const chunk of source) {
           if (peer.writable) {
-            completion += getChatDataFromProvider(
+            const tokenContent = getChatDataFromProvider(
               provider,
               safeParseStreamResponse(chunk.toString())
             );
 
-            const write = peer.write(chunk);
+            completion += tokenContent;
 
+            const metric = await streamMetricsCollector.processToken(
+              tokenContent || ""
+            );
+            if (metric) metrics.push(metric);
+
+            const write = peer.write(chunk);
             if (!write) {
               await new Promise((resolve) => peer.once("drain", resolve));
             }
@@ -387,11 +410,10 @@ export class SymmetryClient {
           }
         }
       });
+
       await Promise.resolve(peerPipeline);
 
-      peer.write(
-        createMessage(serverMessageKeys.inferenceEnded, data?.data.key)
-      );
+      this.sendRequestMetrics(streamMetricsCollector, data, peer);
 
       if (
         this._config.get("dataCollectionEnabled") &&
@@ -403,7 +425,32 @@ export class SymmetryClient {
       let errorMessage = "An error occurred during inference";
       if (error instanceof Error) errorMessage = error.message;
       logger.error(`🚨 ${errorMessage}`);
+
+      this._serverPeer?.write(
+        createMessage(serverMessageKeys.inferenceError, {
+          requestId: data.data.key,
+          error: errorMessage,
+        })
+      );
+    } finally {
+      peer.write(
+        createMessage(serverMessageKeys.inferenceEnded, data?.data.key)
+      );
     }
+  }
+
+  private sendRequestMetrics(
+    metrics: StreamMetricsCollector,
+    data: ProviderMessage<InferenceRequest>,
+    peer: Peer
+  ) {
+    this._serverPeer?.write(
+      createMessage(serverMessageKeys.sendMetrics, {
+        state: metrics.getMetricsState(),
+        peerId: peer.publicKey.toString("hex"),
+        timestamp: Date.now(),
+      })
+    );
   }
 
   private async saveCompletion(
