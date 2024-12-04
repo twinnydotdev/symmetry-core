@@ -9,6 +9,7 @@ interface ConnectionManagerConfig {
   serverKey: Buffer;
   onConnection: (peer: Peer) => void;
   onDisconnection?: () => void;
+  swarmOptions: SwarmOptions | undefined;
 }
 
 export class ConnectionManager {
@@ -32,13 +33,13 @@ export class ConnectionManager {
     return this._currentPeer;
   }
 
-  async connect(opts?: SwarmOptions): Promise<void> {
+  async connect(): Promise<void> {
     try {
       if (this._serverSwarm) {
         await this._serverSwarm.destroy();
       }
 
-      this._serverSwarm = new Hyperswarm(opts);
+      this._serverSwarm = new Hyperswarm(this._config.swarmOptions);
       this._serverSwarm.join(crypto.discoveryKey(this._config.serverKey), {
         client: true,
         server: false,

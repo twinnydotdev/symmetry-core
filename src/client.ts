@@ -192,12 +192,13 @@ export class SymmetryClient {
     const serverKey = Buffer.from(this._config.get("serverKey"));
 
     this._connectionManager = new ConnectionManager({
-      serverKey,
       onConnection: this.handleConnection,
+      serverKey,
+      swarmOptions: opts,
       onDisconnection: () => (this._serverPeer = null),
     });
 
-    await this._connectionManager.connect(opts);
+    await this._connectionManager.connect();
   }
 
   handleConnection = (peer: Peer) => {
