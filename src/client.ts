@@ -25,17 +25,19 @@ import { PROVIDER_HELLO_TIMEOUT, serverMessageKeys } from "./constants";
 import { ReadableStream } from "stream/web";
 import { pipeline } from "node:stream/promises";
 import { StreamMetricsCollector } from "./metrics";
+import { ConnectionManager } from "./connection-manager";
 
 export class SymmetryClient {
   private _challenge: Buffer | null = null;
   private _config: ConfigManager;
+  private _connectionManager: ConnectionManager | null = null;
   private _conversationIndex = 0;
   private _discoveryKey: Buffer | null = null;
   private _isPublic = false;
   private _providerConnections: number = 0;
   private _providerSwarm: Hyperswarm | null = null;
-  private _serverSwarm: Hyperswarm | null = null;
   private _serverPeer: Peer | null = null;
+  private _serverSwarm: Hyperswarm | null = null;
 
   constructor(configPath: string) {
     logger.info(`🔗 Initializing client using config file: ${configPath}`);
@@ -116,11 +118,6 @@ export class SymmetryClient {
     return newSecret;
   }
 
-  async destroySwarms() {
-    await this._providerSwarm?.destroy();
-    await this._serverSwarm?.destroy();
-  }
-
   private async testProviderCall(): Promise<void> {
     const testCall = async () => {
       logger.info(chalk.white(`👋 Saying hello to your provider...`));
@@ -192,70 +189,69 @@ export class SymmetryClient {
   }
 
   async joinServer(opts?: SwarmOptions): Promise<void> {
-    this._serverSwarm = new Hyperswarm(opts);
     const serverKey = Buffer.from(this._config.get("serverKey"));
-    this._serverSwarm.join(crypto.discoveryKey(serverKey), {
-      client: true,
-      server: false,
+
+    this._connectionManager = new ConnectionManager({
+      serverKey,
+      onConnection: this.handleConnection,
+      onDisconnection: () => (this._serverPeer = null),
     });
-    this._serverSwarm.flush();
-    this._serverSwarm.on("connection", (peer: Peer) => {
-      this._serverPeer = peer;
-      logger.info(chalk.green("🔗 Connected to server."));
 
-      this.testProviderCall();
-
-      this._challenge = crypto.randomBytes(32);
-
-      this._serverPeer.write(
-        createMessage(serverMessageKeys.challenge, {
-          challenge: this._challenge,
-        })
-      );
-
-      this._serverPeer.write(
-        createMessage(serverMessageKeys.join, {
-          ...this._config.getAll(),
-          discoveryKey: this._discoveryKey?.toString("hex"),
-          apiKey: "",
-        })
-      );
-
-      this.startHeartBeat();
-
-      this._serverPeer.on("data", async (buffer: Buffer) => {
-        if (!buffer) return;
-
-        const data = safeParseJson<
-          ProviderMessage<{ message: string; signature: { data: string } }>
-        >(buffer.toString());
-
-        if (data && data.key) {
-          switch (data.key) {
-            case serverMessageKeys.challenge:
-              this.handleServerVerification(
-                data.data as { message: string; signature: { data: string } }
-              );
-              break;
-            case serverMessageKeys.inference:
-              logger.info(
-                chalk.white(`🔗 Received inference request from server.`)
-              );
-              this.handleInferenceRequest(
-                data as unknown as ProviderMessage<InferenceRequest>,
-                peer
-              );
-              break;
-          }
-        }
-      });
-    });
+    await this._connectionManager.connect(opts);
   }
 
-  startHeartBeat() {
-    setInterval(() => {
-      this._serverPeer?.write(createMessage(serverMessageKeys.heartbeat));
-    }, 10_000);
+  handleConnection = (peer: Peer) => {
+    this._serverPeer = peer;
+
+    this._challenge = crypto.randomBytes(32);
+
+    peer.write(
+      createMessage(serverMessageKeys.challenge, {
+        challenge: this._challenge,
+      })
+    );
+
+    peer.write(
+      createMessage(serverMessageKeys.join, {
+        ...this._config.getAll(),
+        discoveryKey: this._discoveryKey?.toString("hex"),
+        apiKey: "",
+      })
+    );
+
+    this.testProviderCall();
+
+    peer.on("data", async (buffer: Buffer) => {
+      if (!buffer) return;
+
+      const data = safeParseJson<
+        ProviderMessage<{ message: string; signature: { data: string } }>
+      >(buffer.toString());
+
+      if (data && data.key) {
+        switch (data.key) {
+          case serverMessageKeys.challenge:
+            this.handleServerVerification(
+              data.data as { message: string; signature: { data: string } }
+            );
+            break;
+          case serverMessageKeys.inference:
+            logger.info(
+              chalk.white(`🔗 Received inference request from server.`)
+            );
+            this.handleInferenceRequest(
+              data as unknown as ProviderMessage<InferenceRequest>,
+              peer
+            );
+            break;
+        }
+      }
+    });
+  };
+
+  async destroySwarms() {
+    await this._providerSwarm?.destroy();
+    await this._serverSwarm?.destroy();
   }
 
   getServerPublicKey(serverKeyHex: string): Buffer {
