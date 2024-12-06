@@ -17,8 +17,6 @@ export class ConnectionManager {
   private _currentPeer: Peer | null = null;
   private _heartbeatInterval: NodeJS.Timeout | null = null;
   private _isConnecting = false;
-  private _reconnectDelay = 1000;
-  private _reconnectTimeout: NodeJS.Timeout | null = null;
   private _serverSwarm: Hyperswarm | null = null;
 
   constructor(config: ConnectionManagerConfig) {
@@ -93,14 +91,6 @@ export class ConnectionManager {
     this.cleanup();
 
     this._config.onDisconnection?.();
-
-    this._reconnectTimeout = setTimeout(() => {
-      if (!this._isConnecting) {
-        logger.info("Attempting to reconnect...");
-        this._isConnecting = true;
-        this.connect();
-      }
-    }, this._reconnectDelay);
   }
 
   private startHeartbeat(peer: Peer): void {
@@ -121,11 +111,6 @@ export class ConnectionManager {
     if (this._heartbeatInterval) {
       clearInterval(this._heartbeatInterval);
       this._heartbeatInterval = null;
-    }
-
-    if (this._reconnectTimeout) {
-      clearTimeout(this._reconnectTimeout);
-      this._reconnectTimeout = null;
     }
 
     if (this._currentPeer) {
