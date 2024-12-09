@@ -7,7 +7,6 @@ export const serverMessageKeys = {
   conectionSize: "conectionSize",
   heartbeat: "heartbeat",
   inference: "inference",
-  sendMetrics: "sendMetrics",
   inferenceEnded: "inferenceEnded",
   inferenceError: "inferenceError",
   join: "join",
@@ -17,8 +16,10 @@ export const serverMessageKeys = {
   providerDetails: "providerDetails",
   reportCompletion: "reportCompletion",
   requestProvider: "requestProvider",
+  sendMetrics: "sendMetrics",
   sessionValid: "sessionValid",
   verifySession: "verifySession",
+  versionMismatch: "versionMismatch",
 } as const;
 
 export const apiProviders = {

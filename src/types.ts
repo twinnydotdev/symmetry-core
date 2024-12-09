@@ -32,6 +32,10 @@ export interface InferenceRequest {
   messages: Message[];
 }
 
+export interface VersionMessage {
+  minVersion: string
+}
+
 interface ReadableState {
   highWaterMark: number;
   buffer: any;
@@ -233,7 +237,7 @@ export interface StreamResponse {
   prompt_eval_duration: number
   eval_count: number
   eval_duration: number
-  type? : string
+  type?: string
   choices: [
     {
       text: string

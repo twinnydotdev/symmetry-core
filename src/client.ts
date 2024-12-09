@@ -4,7 +4,8 @@ import Hyperswarm, { SwarmOptions } from "hyperswarm";
 import crypto from "hypercore-crypto";
 import fs from "node:fs";
 import yaml from "js-yaml";
-import cryptoLib from "crypto"; // Node's built-in crypto library
+import cryptoLib from "crypto";
+import { version as symmetryCoreVersion } from "../package.json";
 
 import { ConfigManager } from "./config";
 import {
@@ -20,6 +21,7 @@ import {
   InferenceRequest,
   Message,
   StreamMetrics,
+  VersionMessage,
 } from "./types";
 import { PROVIDER_HELLO_TIMEOUT, serverMessageKeys } from "./constants";
 import { ReadableStream } from "stream/web";
@@ -215,6 +217,7 @@ export class SymmetryClient {
     peer.write(
       createMessage(serverMessageKeys.join, {
         ...this._config.getAll(),
+        symmetryCoreVersion,
         discoveryKey: this._discoveryKey?.toString("hex"),
         apiKey: "",
       })
@@ -226,7 +229,9 @@ export class SymmetryClient {
       if (!buffer) return;
 
       const data = safeParseJson<
-        ProviderMessage<{ message: string; signature: { data: string } }>
+        ProviderMessage<
+          { message: string; signature: { data: string } } | VersionMessage
+        >
       >(buffer.toString());
 
       if (data && data.key) {
@@ -236,6 +241,16 @@ export class SymmetryClient {
               data.data as { message: string; signature: { data: string } }
             );
             break;
+          case serverMessageKeys.versionMismatch: {
+            const message = data.data as VersionMessage;
+            logger.info(
+              `
+                ❌ Version mismatch minimum required symmetry client is v${message.minVersion}; Destroying connection, please update.
+              `.trim()
+            );
+            this._connectionManager?.destroy();
+            break;
+          }
           case serverMessageKeys.inference:
             logger.info(
               chalk.white(`🔗 Received inference request from server.`)
@@ -410,7 +425,7 @@ export class SymmetryClient {
 
       await Promise.resolve(peerPipeline);
 
-      this.sendRequestMetrics(streamMetricsCollector, data, peer);
+      this.sendRequestMetrics(streamMetricsCollector, peer);
 
       if (
         this._config.get("dataCollectionEnabled") &&
@@ -436,11 +451,7 @@ export class SymmetryClient {
     }
   }
 
-  private sendRequestMetrics(
-    metrics: StreamMetricsCollector,
-    data: ProviderMessage<InferenceRequest>,
-    peer: Peer
-  ) {
+  private sendRequestMetrics(metrics: StreamMetricsCollector, peer: Peer) {
     this._serverPeer?.write(
       createMessage(serverMessageKeys.sendMetrics, {
         state: metrics.getMetricsState(),

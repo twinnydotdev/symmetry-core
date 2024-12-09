@@ -8,6 +8,7 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
     "lib": ["ES2018", "DOM", "DOM.Iterable"],
     "types": ["node", "jest"],
     "typeRoots": ["./node_modules/@types", "."],

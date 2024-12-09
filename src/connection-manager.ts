@@ -2,6 +2,7 @@ import chalk from "chalk";
 import crypto from "hypercore-crypto";
 import Hyperswarm, { SwarmOptions } from "hyperswarm";
 
+import { version as symmetryCoreVersion } from '../package.json'
 import { Peer } from "./types";
 import { logger } from "./logger";
 
@@ -36,6 +37,8 @@ export class ConnectionManager {
       if (this._serverSwarm) {
         await this._serverSwarm.destroy();
       }
+
+      logger.info(`🔗 Connecting to server using symmetry-core version ${symmetryCoreVersion}`)
 
       this._serverSwarm = new Hyperswarm(this._config.swarmOptions);
       this._serverSwarm.join(crypto.discoveryKey(this._config.serverKey), {
