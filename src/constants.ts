@@ -5,6 +5,8 @@ export const PROVIDER_HELLO_TIMEOUT = 30000
 export const serverMessageKeys = {
   challenge: "challenge",
   conectionSize: "conectionSize",
+  healthCheck: "healthCheck",
+  healthCheckAck: "healthCheckAck",
   heartbeat: "heartbeat",
   inference: "inference",
   inferenceEnded: "inferenceEnded",

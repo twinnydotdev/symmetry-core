@@ -260,6 +260,12 @@ export class SymmetryClient {
               peer
             );
             break;
+          case serverMessageKeys.healthCheck:
+            this.handleHealthCheckRequest(peer);
+            break;
+          case serverMessageKeys.healthCheckAck:
+            this.handleHealthCheckAck(peer);
+            break;
         }
       }
     });
@@ -348,6 +354,46 @@ export class SymmetryClient {
     }
 
     return messages;
+  }
+  private async handleHealthCheckAck(peer: Peer): Promise<void> {
+    logger.info(`🤖 Health check ack received from ${peer.rawStream.remoteHost}`);
+  }
+
+  private async handleHealthCheckRequest(peer: Peer): Promise<void> {
+    logger.info("🤖 Health check request received");
+
+    const req = this.buildChatStreamRequest([
+      {
+        role: "user",
+        content: `Hello, reply with one word only if you are alive. e.g "alive".`,
+      },
+    ]);
+
+    if (!req) return;
+
+    const { requestOptions, requestBody } = req;
+    const { protocol, hostname, port, path, method, headers } = requestOptions;
+    const url = `${protocol}://${hostname}:${port}${path}`;
+
+    try {
+      const response = await fetch(url, {
+        method,
+        headers,
+        body: JSON.stringify(requestBody),
+      });
+
+      if (!response.ok) {
+        throw new Error(
+          `Server responded with status code: ${response.status}`
+        );
+      }
+
+      peer.write(createMessage(serverMessageKeys.healthCheck));
+    } catch (error) {
+      let errorMessage = "Health check failed";
+      if (error instanceof Error) errorMessage = error.message;
+      logger.error(`🚨 Health check error: ${errorMessage}`);
+    }
   }
 
   private async handleInferenceRequest(

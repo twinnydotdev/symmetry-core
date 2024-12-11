@@ -8,7 +8,7 @@ import { SymmetryClient  } from "./client";
 const program = new Command();
 
 program
-  .version("1.0.20")
+  .version("1.0.33")
   .description("symmetry")
   .option(
     "-c, --config <path>",
