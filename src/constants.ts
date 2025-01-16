@@ -1,6 +1,6 @@
 export const NORMALIZE_REGEX = /\s*\r?\n|\r/g;
 
-export const PROVIDER_HELLO_TIMEOUT = 30000
+export const PROVIDER_HELLO_TIMEOUT = 30000;
 
 export const serverMessageKeys = {
   challenge: "challenge",
@@ -25,10 +25,11 @@ export const serverMessageKeys = {
 } as const;
 
 export const apiProviders = {
-  LiteLLM: 'litellm',
-  LlamaCpp: 'llamacpp',
-  LMStudio: 'lmstudio',
-  Ollama: 'ollama',
-  Oobabooga: 'oobabooga',
-  OpenWebUI: 'openwebui',
-} as const
+  LiteLLM: "litellm",
+  LlamaCpp: "llamacpp",
+  LMStudio: "lmstudio",
+  Ollama: "ollama",
+  Oobabooga: "oobabooga",
+  OpenAICompatible: "openai-compatible",
+  OpenWebUI: "openwebui",
+} as const;

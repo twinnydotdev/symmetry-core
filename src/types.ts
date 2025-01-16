@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import { ChatCompletionMessageParam } from "token.js";
 import { serverMessageKeys } from "./constants";
 
 export interface ProviderConfig {
@@ -29,7 +30,7 @@ export interface ProviderMessage<T = unknown> {
 
 export interface InferenceRequest {
   key: string;
-  messages: Message[];
+  messages: ChatCompletionMessageParam[];
 }
 
 export interface VersionMessage {
@@ -212,11 +213,6 @@ export interface PeerUpsert {
     public?: boolean;
     serverKey?: string;
   };
-}
-
-export interface Message {
-  role: string;
-  content: string | undefined;
 }
 
 export type ServerMessageKey = keyof typeof serverMessageKeys;

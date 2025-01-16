@@ -37,6 +37,7 @@
     "hyperswarm": "^4.8.0",
     "js-yaml": "^4.1.0",
     "sqlite3": "^5.1.7",
+    "token.js": "^0.4.8",
     "ws": "^8.18.0"
   },
   "devDependencies": {

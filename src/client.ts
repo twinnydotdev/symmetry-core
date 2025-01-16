@@ -1,4 +1,3 @@
-import { PassThrough, Readable } from "node:stream";
 import chalk from "chalk";
 import Hyperswarm, { SwarmOptions } from "hyperswarm";
 import crypto from "hypercore-crypto";
@@ -6,28 +5,26 @@ import fs from "node:fs";
 import yaml from "js-yaml";
 import cryptoLib from "crypto";
 import { version as symmetryCoreVersion } from "../package.json";
+import { ChatCompletionMessageParam, TokenJS } from "token.js";
 
 import { ConfigManager } from "./config";
-import {
-  createMessage,
-  getChatDataFromProvider,
-  safeParseJson,
-  safeParseStreamResponse,
-} from "./utils";
+import { createMessage, safeParseJson } from "./utils";
 import { logger } from "./logger";
 import {
   Peer,
   ProviderMessage,
   InferenceRequest,
-  Message,
   StreamMetrics,
   VersionMessage,
 } from "./types";
-import { PROVIDER_HELLO_TIMEOUT, serverMessageKeys } from "./constants";
-import { ReadableStream } from "stream/web";
-import { pipeline } from "node:stream/promises";
+import {
+  apiProviders,
+  PROVIDER_HELLO_TIMEOUT,
+  serverMessageKeys,
+} from "./constants";
 import { StreamMetricsCollector } from "./metrics";
 import { ConnectionManager } from "./connection-manager";
+import { CompletionStreaming, LLMProvider } from "token.js/dist/chat";
 
 export class SymmetryClient {
   private _challenge: Buffer | null = null;
@@ -40,6 +37,7 @@ export class SymmetryClient {
   private _providerSwarm: Hyperswarm | null = null;
   private _serverPeer: Peer | null = null;
   private _serverSwarm: Hyperswarm | null = null;
+  private _tokenJs: TokenJS | undefined;
 
   constructor(configPath: string) {
     logger.info(`🔗 Initializing client using config file: ${configPath}`);
@@ -123,68 +121,41 @@ export class SymmetryClient {
   private async testProviderCall(): Promise<void> {
     const testCall = async () => {
       logger.info(chalk.white(`👋 Saying hello to your provider...`));
-      const testMessages: Message[] = [
-        { role: "user", content: "Hello, this is a test message." },
-      ];
-      const req = this.buildChatStreamRequest(testMessages);
 
-      if (!req) {
-        logger.error(chalk.red("❌ Failed to build test request"));
-        throw new Error("Failed to build test request");
-      }
+      const url = this.getProviderBaseUrl();
 
-      const { requestOptions, requestBody } = req;
-      const { protocol, hostname, port, path, method, headers } =
-        requestOptions;
-      const url = `${protocol}://${hostname}:${port}${path}`;
+      this._tokenJs = new TokenJS({
+        baseURL: url,
+        apiKey: this._config.get("apiKey"),
+      });
 
       logger.info(chalk.white(`🚀 Sending test request to ${url}`));
 
+      const provider = this.getIsOpenAICompatible(
+        this._config.get("apiProvider")
+      )
+        ? apiProviders.OpenAICompatible
+        : // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          (this._config.get("apiProvider") as any);
+
       try {
-        const response = await fetch(url, {
-          method,
-          headers,
-          body: JSON.stringify(requestBody),
+        await this._tokenJs?.chat.completions.create({
+          model: this._config.get("modelName"),
+          messages: [
+            { role: "user", content: "Hello, this is a test message." },
+          ],
+          stream: true,
+          provider,
         });
-
-        if (!response.ok) {
-          logger.error(
-            chalk.red(
-              `❌ Server responded with status code: ${response.status}`
-            )
-          );
-          this.destroySwarms();
-          throw new Error(
-            `Server responded with status code: ${response.status}`
-          );
-        }
-
-        if (!response.body) {
-          logger.error(
-            chalk.red("❌ Failed to get a ReadableStream from the response")
-          );
-          this.destroySwarms();
-          throw new Error("Failed to get a ReadableStream from the response");
-        }
-
-        logger.info(chalk.white(`📡 Got response, checking stream...`));
-
-        const reader = response.body.getReader();
-        const { done } = await reader.read();
-        if (done) {
-          logger.error(chalk.red("❌ Stream ended without data"));
-          this.destroySwarms();
-          throw new Error("Stream ended without data");
-        }
-
-        logger.info(chalk.green(`✅ Test inference call successful!`));
       } catch (error) {
+        let errorMessage = "Health check failed";
+        if (error instanceof Error) errorMessage = error.message;
+        logger.error(`🚨 Health check error: ${errorMessage}`);
         this.destroySwarms();
-        logger.error(
-          chalk.red(`❌ Error during test inference call: ${error}`)
-        );
-        throw error;
+        throw new Error(errorMessage);
       }
+
+      logger.info(chalk.green(`✅ Test inference call successful!`));
     };
 
     setTimeout(() => testCall(), PROVIDER_HELLO_TIMEOUT);
@@ -338,7 +309,9 @@ export class SymmetryClient {
     });
   }
 
-  private getMessagesWithSystem(messages: Message[]): Message[] {
+  private getMessagesWithSystem(
+    messages: ChatCompletionMessageParam[]
+  ): ChatCompletionMessageParam[] {
     const systemMessage = this._config.get("systemMessage");
 
     const hasSystem = messages.some((m) => m.role === "system");
@@ -356,38 +329,38 @@ export class SymmetryClient {
     return messages;
   }
   private async handleHealthCheckAck(peer: Peer): Promise<void> {
-    logger.info(`🤖 Health check ack received from ${peer.rawStream.remoteHost}`);
+    logger.info(
+      `🤖 Health check ack received from ${peer.rawStream.remoteHost}`
+    );
   }
 
   private async handleHealthCheckRequest(peer: Peer): Promise<void> {
     logger.info("🤖 Health check request received");
 
-    const req = this.buildChatStreamRequest([
-      {
-        role: "user",
-        content: `Hello, reply with one word only if you are alive. e.g "alive".`,
-      },
-    ]);
+    this._tokenJs = new TokenJS({
+      baseURL: this.getProviderBaseUrl(),
+      apiKey: this._config.get("apiKey"),
+    });
 
-    if (!req) return;
+    const provider = this.getIsOpenAICompatible(this._config.get("apiProvider"))
+      ? apiProviders.OpenAICompatible
+      : // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (this._config.get("apiProvider") as any);
 
-    const { requestOptions, requestBody } = req;
-    const { protocol, hostname, port, path, method, headers } = requestOptions;
-    const url = `${protocol}://${hostname}:${port}${path}`;
+    const body: CompletionStreaming<LLMProvider> = {
+      model: this._config.get("modelName"),
+      messages: [
+        {
+          role: "user",
+          content: `Hello, reply with one word only if you are alive. e.g "alive".`,
+        },
+      ],
+      stream: true,
+      provider,
+    };
 
     try {
-      const response = await fetch(url, {
-        method,
-        headers,
-        body: JSON.stringify(requestBody),
-      });
-
-      if (!response.ok) {
-        throw new Error(
-          `Server responded with status code: ${response.status}`
-        );
-      }
-
+      await this._tokenJs?.chat.completions.create(body);
       peer.write(createMessage(serverMessageKeys.healthCheck));
     } catch (error) {
       let errorMessage = "Health check failed";
@@ -395,6 +368,25 @@ export class SymmetryClient {
       logger.error(`🚨 Health check error: ${errorMessage}`);
     }
   }
+
+  public getIsOpenAICompatible = (provider: string) => {
+    const providers = Object.values(apiProviders) as string[];
+    return providers.includes(provider);
+  };
+
+  public getProviderBaseUrl = () => {
+    if (this.getIsOpenAICompatible(this._config.get("apiProvider"))) {
+      return `${this._config.get("apiProtocol")}://${this._config.get(
+        "apiHostname"
+      )}${
+        this._config.get("apiPort") ? `:${this._config.get("apiPort")}` : ""
+      }${
+        this._config.get("apiBasePath") ? this._config.get("apiBasePath") : ""
+      }`;
+    } else {
+      return "";
+    }
+  };
 
   private async handleInferenceRequest(
     data: ProviderMessage<InferenceRequest>,
@@ -409,70 +401,46 @@ export class SymmetryClient {
     this._serverPeer?.write(createMessage(serverMessageKeys.inference));
 
     const messages = this.getMessagesWithSystem(data?.data.messages);
-    const req = this.buildChatStreamRequest(messages);
 
-    if (!req) return;
+    this._tokenJs = new TokenJS({
+      baseURL: this.getProviderBaseUrl(),
+      apiKey: this._config.get("apiKey"),
+    });
 
-    const { requestOptions, requestBody } = req;
-    const { protocol, hostname, port, path, method, headers } = requestOptions;
-    const url = `${protocol}://${hostname}:${port}${path}`;
+    const provider = this.getIsOpenAICompatible(this._config.get("apiProvider"))
+      ? apiProviders.OpenAICompatible
+      : // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (this._config.get("apiProvider") as any);
+
+    const body: CompletionStreaming<LLMProvider> = {
+      model: this._config.get("modelName"),
+      messages: messages || undefined,
+      stream: true,
+      provider,
+    };
+
+    const metrics: StreamMetrics[] = [];
+    let completion = ""
 
     try {
-      const response = await fetch(url, {
-        method,
-        headers,
-        body: JSON.stringify(requestBody),
-      });
+      const result = await this._tokenJs.chat.completions.create(body);
+      for await (const part of result) {
+        const token = part.choices[0].delta.content;
 
-      if (!response.ok) {
-        throw new Error(
-          `Server responded with status code: ${response.status}`
-        );
-      }
-
-      if (!response.body) {
-        throw new Error("Failed to get a ReadableStream from the response");
-      }
-
-      const responseStream = Readable.fromWeb(
-        response.body as ReadableStream<Uint8Array>
-      );
-      const peerStream = new PassThrough();
-      responseStream.pipe(peerStream);
-      let completion = "";
-      const metrics: StreamMetrics[] = [];
-
-      const provider = this._config.get("apiProvider");
-
-      const peerPipeline = pipeline(peerStream, async function (source) {
-        for await (const chunk of source) {
-          if (peer.writable) {
-            const tokenContent = getChatDataFromProvider(
-              provider,
-              safeParseStreamResponse(chunk.toString())
-            );
-
-            completion += tokenContent;
-
-            const metric = await streamMetricsCollector.processToken(
-              tokenContent || ""
-            );
-            if (metric) metrics.push(metric);
-
-            const write = peer.write(chunk);
-            if (!write) {
-              await new Promise((resolve) => peer.once("drain", resolve));
-            }
-          } else {
-            break;
-          }
+        if (token) {
+          const metric = await streamMetricsCollector.processToken(token);
+          if (metric) metrics.push(metric);
+          completion += token;
+          peer.write(token);
         }
-      });
-
-      await Promise.resolve(peerPipeline);
+      }
 
       this.sendRequestMetrics(streamMetricsCollector, peer);
-
+      peer.write(
+        createMessage(serverMessageKeys.inferenceEnded, data?.data.key)
+      );
+      await new Promise((resolve) => peer.once("drain", resolve));
+  
       if (
         this._config.get("dataCollectionEnabled") &&
         data.data.key === serverMessageKeys.inference
@@ -490,11 +458,7 @@ export class SymmetryClient {
           error: errorMessage,
         })
       );
-    } finally {
-      peer.write(
-        createMessage(serverMessageKeys.inferenceEnded, data?.data.key)
-      );
-    }
+    } 
   }
 
   private sendRequestMetrics(metrics: StreamMetricsCollector, peer: Peer) {
@@ -510,7 +474,7 @@ export class SymmetryClient {
   private async saveCompletion(
     completion: string,
     peer: Peer,
-    messages: Message[]
+    messages: ChatCompletionMessageParam[]
   ) {
     fs.writeFile(
       `${this._config.get("dataPath")}/${peer.publicKey.toString("hex")}-${
@@ -527,28 +491,6 @@ export class SymmetryClient {
         logger.info(`📝 Completion saved to file`);
       }
     );
-  }
-
-  private buildChatStreamRequest(messages: Message[]) {
-    const requestOptions = {
-      hostname: this._config.get("apiHostname"),
-      port: Number(this._config.get("apiPort")),
-      path: this._config.get("apiChatPath"),
-      protocol: this._config.get("apiProtocol"),
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${this._config.get("apiKey")}`,
-      },
-    };
-
-    const requestBody = {
-      model: this._config.get("modelName"),
-      messages: messages || undefined,
-      stream: true,
-    };
-
-    return { requestOptions, requestBody };
   }
 }
 
