@@ -1,5 +1,20 @@
 import { SymmetryClient } from "../src/client";
 import yaml from "js-yaml";
+import fs from "fs";
+
+jest.mock("fs", () => ({
+  promises: {
+    readFile: jest.fn(),
+    writeFile: jest.fn(),
+  },
+  readFileSync: jest.fn(),
+  writeFileSync: jest.fn(),
+  existsSync: jest.fn(),
+}));
+
+jest.mock("js-yaml", () => ({
+  load: jest.fn(),
+}));
 
 jest.mock("hyperswarm", () => {
   return jest.fn().mockImplementation(() => ({
@@ -21,16 +36,6 @@ jest.mock("hypercore-crypto", () => ({
   sign: jest.fn(),
 }));
 
-jest.mock("fs", () => ({
-  readFileSync: jest.fn(),
-  writeFileSync: jest.fn(),
-  existsSync: jest.fn(),
-}));
-
-jest.mock("js-yaml", () => ({
-  load: jest.fn(),
-}));
-
 describe("Symmetry", () => {
   let client: SymmetryClient;
   const mockConfig = {
@@ -48,12 +53,15 @@ describe("Symmetry", () => {
     public: false,
     serverKey: "test-server-key",
     systemMessage: "test-system-message",
-    userSecret: "arse",
+    userSecret: "test-secret",
   };
 
   beforeEach(() => {
     jest.clearAllMocks();
     (yaml.load as jest.Mock).mockReturnValue(mockConfig);
+    (fs.promises.readFile as jest.Mock).mockResolvedValue(
+      JSON.stringify(mockConfig)
+    );
     client = new SymmetryClient("mock-config.yaml");
   });
 
