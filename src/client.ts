@@ -431,7 +431,7 @@ export class SymmetryClient {
           const metric = await streamMetricsCollector.processToken(token);
           if (metric) metrics.push(metric);
           completion += token;
-          peer.write(token);
+          peer.write(JSON.stringify(part));
         }
       }
 
