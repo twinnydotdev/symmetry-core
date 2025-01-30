@@ -43,7 +43,7 @@ describe("Symmetry", () => {
     temperature: 1,
     apiHostname: "test.api.com",
     apiPort: 443,
-    apiChatPath: "/v1/chat",
+    apiBasePath: "/v1",
     dataPath: "",
     apiProtocol: "https",
     apiKey: "test-api-key",

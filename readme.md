@@ -33,7 +33,7 @@ Here's an example configuration object for creating a SymmetryProvider:
 const config = {
   apiHostname: "localhost",
   apiKey: "",
-  apiPath: "/v1/chat/completions",
+  apiBasePath: "/v1",
   apiPort: 11434,
   apiProtocol: "http",
   apiProvider: "ollama",
@@ -55,7 +55,7 @@ const provider = new SymmetryProvider(config);
 
 - `apiHostname`: The hostname of the API server.
 - `apiKey`: The API key for authentication (if required).
-- `apiChatPath`: The endpoint path for chat completions.
+- `apiBasePath`: The endpoint for your OpenAI compatible API.
 - `apiPort`: The port number on which the API server is listening.
 - `apiProtocol`: The protocol used to communicate with the API server.
 - `apiProvider`: The name of the API provider.

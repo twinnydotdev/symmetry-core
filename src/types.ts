@@ -4,7 +4,6 @@ import { serverMessageKeys } from "./constants";
 
 export interface ProviderConfig {
   apiBasePath?: string;
-  apiChatPath?: string;
   apiHealthPath?: string;
   apiHostname: string;
   apiKey?: string;

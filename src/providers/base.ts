@@ -19,7 +19,6 @@ export abstract class BaseProvider {
   serverConfig: Partial<ProviderConfig> = {
     apiProtocol: "http",
     apiHostname: "localhost",
-    apiChatPath: "/v1/chat/completions",
     apiModelsPath: "/v1/models",
     apiBasePath: "/v1",
     dataPath: path.join(os.homedir(), ".config", "symmetry", "data"),
@@ -113,7 +112,6 @@ export abstract class BaseProvider {
       apiPort: server.apiPort,
       apiProtocol: "http",
       apiBasePath: server.apiBasePath,
-      apiChatPath: server.apiChatPath,
       modelName: server.modelName,
       systemMessage: "You are a helpful AI assistant.",
       serverKey:
