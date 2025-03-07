@@ -32,12 +32,12 @@
   "dependencies": {
     "chalk": "^4.1.2",
     "commander": "^12.1.0",
+    "fluency.js": "^1.0.1",
     "hypercore-crypto": "^3.4.2",
     "hyperdht": "^6.15.4",
     "hyperswarm": "^4.8.0",
     "js-yaml": "^4.1.0",
     "sqlite3": "^5.1.7",
-    "token.js": "^0.5.3",
     "ws": "^8.18.0"
   },
   "devDependencies": {

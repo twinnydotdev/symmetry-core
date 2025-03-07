@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { ChatCompletionMessageParam } from "token.js";
+import { ChatCompletionMessageParam } from "fluency.js";
 import { serverMessageKeys } from "./constants";
 
 export interface ProviderConfig {

@@ -5,7 +5,7 @@ import fs from "node:fs";
 import yaml from "js-yaml";
 import cryptoLib from "crypto";
 import { version as symmetryCoreVersion } from "../package.json";
-import { ChatCompletionMessageParam, TokenJS } from "token.js";
+import { ChatCompletionMessageParam, TokenJS } from "fluency.js";
 
 import { ConfigManager } from "./config";
 import { createMessage, safeParseJson } from "./utils";
@@ -24,7 +24,7 @@ import {
 } from "./constants";
 import { StreamMetricsCollector } from "./metrics";
 import { ConnectionManager } from "./connection-manager";
-import { CompletionStreaming, LLMProvider } from "token.js/dist/chat";
+import { CompletionStreaming, LLMProvider } from "fluency.js/dist/chat";
 
 export class SymmetryClient {
   private _challenge: Buffer | null = null;
