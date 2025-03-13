@@ -6,7 +6,6 @@ export class LlamaCppProvider extends BaseProvider {
   readonly serverConfig: ProviderConfig = {
     ...this.serverConfig,
     name: "llamacpp",
-    apiProvider: "llamacpp",
     apiPort: 8080,
     apiHealthPath: "/health",
     modelName: "",

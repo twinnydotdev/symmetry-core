@@ -36,13 +36,11 @@ const config = {
   apiBasePath: "/v1",
   apiPort: 11434,
   apiProtocol: "http",
-  apiProvider: "ollama",
   dataCollectionEnabled: false,
   maxConnections: 10,
   modelName: "llama3.1:latest",
   name: "twinnydotdev",
   path: "/home/twinnydotdev/.config/symmetry/data",
-  public: true,
   serverKey: "4b4a9cc325d134dee6679e9407420023531fd7e96c563f6c5d00fd5549b77435",
   systemMessage: "I'm a system message",
   userSecret: "mystrongpassword"
@@ -58,13 +56,11 @@ const provider = new SymmetryProvider(config);
 - `apiBasePath`: The endpoint for your OpenAI compatible API.
 - `apiPort`: The port number on which the API server is listening.
 - `apiProtocol`: The protocol used to communicate with the API server.
-- `apiProvider`: The name of the API provider.
 - `dataCollectionEnabled`: Whether to enable data collection.
 - `maxConnections`: The maximum number of connections.
 - `modelName`: The name and version of the AI model to use.
 - `name`: Your chosen name as a provider on the Symmetry network.
 - `dataPath`: The local path where Symmetry will store its configuration and data files.
-- `public`: Whether this provider is publicly accessible on the Symmetry network.
 - `serverKey`: The unique key for connecting to the Symmetry server.
 - `userSecret`: The secret key for user uniqueness and points tracking.
 - `systemMessage`: An optional system message for each conversation.

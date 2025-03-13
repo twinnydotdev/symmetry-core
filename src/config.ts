@@ -28,10 +28,8 @@ export class ConfigManager {
       "apiHostname",
       "apiPort",
       "apiProtocol",
-      "apiProvider",
       "dataPath",
       "modelName",
-      "public",
       "serverKey",
     ];
 
@@ -41,12 +39,6 @@ export class ConfigManager {
           `Missing required field in client configuration: ${field}`
         );
       }
-    }
-
-    if (typeof this.config.public !== "boolean") {
-      throw new Error(
-        'The "public" field in client configuration must be a boolean'
-      );
     }
   }
 

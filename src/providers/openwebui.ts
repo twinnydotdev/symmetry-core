@@ -6,7 +6,6 @@ export class OpenWebUIProvider extends BaseProvider {
   readonly serverConfig: ProviderConfig = {
     ...this.serverConfig,
     name: "openwebui",
-    apiProvider: "openwebui",
     apiPort: 8080,
     apiHealthPath: "/api/models",
     apiModelsPath: "/api/models",

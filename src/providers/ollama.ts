@@ -6,7 +6,6 @@ export class OllamaProvider extends BaseProvider {
   readonly serverConfig: ProviderConfig = {
     ...this.serverConfig,
     name: "ollama",
-    apiProvider: "ollama",
     apiPort: 11434,
     apiHealthPath: "/",
   } as ProviderConfig;

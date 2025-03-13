@@ -6,7 +6,6 @@ export class OobaboogaProvider extends BaseProvider {
   readonly serverConfig: ProviderConfig = {
     ...this.serverConfig,
     name: "oobabooga",
-    apiProvider: "oobabooga",
     apiPort: 5000,
     apiHealthPath: "/v1/models",
     apiModelsPath: "/v1/models",

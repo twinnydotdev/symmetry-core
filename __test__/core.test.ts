@@ -47,7 +47,6 @@ describe("Symmetry", () => {
     dataPath: "",
     apiProtocol: "https",
     apiKey: "test-api-key",
-    apiProvider: "test-provider",
     modelName: "test-model",
     name: "test",
     public: false,

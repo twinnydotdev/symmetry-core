@@ -32,7 +32,6 @@ export class SymmetryClient {
   private _connectionManager: ConnectionManager | null = null;
   private _conversationIndex = 0;
   private _discoveryKey: Buffer | null = null;
-  private _isPublic = false;
   private _providerConnections: number = 0;
   private _providerSwarm: Hyperswarm | null = null;
   private _serverPeer: Peer | null = null;
@@ -42,7 +41,6 @@ export class SymmetryClient {
   constructor(configPath: string) {
     logger.info(`🔗 Initializing client using config file: ${configPath}`);
     this._config = new ConfigManager(configPath);
-    this._isPublic = this._config.get("public");
   }
 
   async init(): Promise<void> {
@@ -72,16 +70,14 @@ export class SymmetryClient {
     logger.info(`📁 Symmetry client initialized.`);
     logger.info(`🔑 Discovery key: ${this._discoveryKey.toString("hex")}`);
 
-    if (this._isPublic) {
-      logger.info(
-        chalk.white(`🔑 Server key: ${this._config.get("serverKey")}`)
-      );
-      logger.info(chalk.white("🔗 Joining server, please wait."));
-      this.joinServer({
-        keyPair,
-        maxConnections: this._config.get("maxConnections"),
-      });
-    }
+    logger.info(
+      chalk.white(`🔑 Server key: ${this._config.get("serverKey")}`)
+    );
+    logger.info(chalk.white("🔗 Joining server, please wait."));
+    this.joinServer({
+      keyPair,
+      maxConnections: this._config.get("maxConnections"),
+    });
 
     process.on("SIGINT", async () => {
       await this._providerSwarm?.destroy();
@@ -131,13 +127,6 @@ export class SymmetryClient {
 
       logger.info(chalk.white(`🚀 Sending test request to ${url}`));
 
-      const provider = this.getIsOpenAICompatible(
-        this._config.get("apiProvider")
-      )
-        ? apiProviders.OpenAICompatible
-        : // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          (this._config.get("apiProvider") as any);
-
       try {
         await this._tokenJs?.chat.completions.create({
           model: this._config.get("modelName"),
@@ -145,7 +134,7 @@ export class SymmetryClient {
             { role: "user", content: "Hello, this is a test message." },
           ],
           stream: true,
-          provider,
+          provider: "openai-compatible",
         });
       } catch (error) {
         let errorMessage = "Health check failed";
@@ -235,7 +224,7 @@ export class SymmetryClient {
             this.handleHealthCheckRequest(peer);
             break;
           case serverMessageKeys.healthCheckAck:
-            this.handleHealthCheckAck(peer);
+            this.handleHealthCheckAck();
             break;
         }
       }
@@ -328,24 +317,19 @@ export class SymmetryClient {
 
     return messages;
   }
-  private async handleHealthCheckAck(peer: Peer): Promise<void> {
+  private async handleHealthCheckAck(): Promise<void> {
     logger.info(
-      `🤖 Health check ack received from ${peer.rawStream.remoteHost}`
+      `🤖 Health check ack received from server.`
     );
   }
 
   private async handleHealthCheckRequest(peer: Peer): Promise<void> {
-    logger.info("🤖 Health check request received");
+    logger.info("🤖 Health check request received.");
 
     this._tokenJs = new TokenJS({
       baseURL: this.getProviderBaseUrl(),
       apiKey: this._config.get("apiKey"),
     });
-
-    const provider = this.getIsOpenAICompatible(this._config.get("apiProvider"))
-      ? apiProviders.OpenAICompatible
-      : // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (this._config.get("apiProvider") as any);
 
     const body: CompletionStreaming<LLMProvider> = {
       model: this._config.get("modelName"),
@@ -356,7 +340,7 @@ export class SymmetryClient {
         },
       ],
       stream: true,
-      provider,
+      provider: "openai-compatible",
     };
 
     try {
@@ -375,17 +359,13 @@ export class SymmetryClient {
   };
 
   public getProviderBaseUrl = () => {
-    if (this.getIsOpenAICompatible(this._config.get("apiProvider"))) {
-      return `${this._config.get("apiProtocol")}://${this._config.get(
-        "apiHostname"
-      )}${
-        this._config.get("apiPort") ? `:${this._config.get("apiPort")}` : ""
-      }${
-        this._config.get("apiBasePath") ? this._config.get("apiBasePath") : ""
-      }`;
-    } else {
-      return "";
-    }
+    return `${this._config.get("apiProtocol")}://${this._config.get(
+      "apiHostname"
+    )}${
+      this._config.get("apiPort") ? `:${this._config.get("apiPort")}` : ""
+    }${
+      this._config.get("apiBasePath") ? this._config.get("apiBasePath") : ""
+    }`;
   };
 
   private async handleInferenceRequest(
@@ -407,16 +387,11 @@ export class SymmetryClient {
       apiKey: this._config.get("apiKey"),
     });
 
-    const provider = this.getIsOpenAICompatible(this._config.get("apiProvider"))
-      ? apiProviders.OpenAICompatible
-      : // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (this._config.get("apiProvider") as any);
-
     const body: CompletionStreaming<LLMProvider> = {
       model: this._config.get("modelName"),
       messages: messages || undefined,
       stream: true,
-      provider,
+      provider: "openai-compatible"
     };
 
     const metrics: StreamMetrics[] = [];

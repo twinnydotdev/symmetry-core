@@ -6,7 +6,6 @@ export class LMStudioProvider extends BaseProvider {
   readonly serverConfig: ProviderConfig = {
     ...this.serverConfig,
     name: "lmstudio",
-    apiProvider: "lmstudio",
     apiPort: 1234,
     apiHealthPath: "/api/v0/models",
   } as ProviderConfig;
