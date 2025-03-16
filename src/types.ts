@@ -252,31 +252,3 @@ export interface OpenAIModelResponse {
   object: string;
   data: OpenAIModel[];
 }
-
-export interface TokenMetrics {
-  length: number;
-  processTime: number;
-}
-
-export interface StreamMetrics {
-  averageTokenLength: number;
-  processTimeMs: number;
-  totalBytes: number;
-  tokensPerSecond: number;
-}
-
-export interface StreamMetricsOptions {
-  metricsInterval: number;
-  maxTimeGap: number;
-  windowSize: number;
-}
-
-export interface MetricsState {
-  totalTokens: number;
-  metricPoints: number;
-  totalBytes: number;
-  totalProcessTime: number;
-  averageTokenLength: number;
-  startTime: number;
-  averageTokensPerSecond: number;
-}

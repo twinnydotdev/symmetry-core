@@ -5,7 +5,7 @@ import fs from "node:fs";
 import yaml from "js-yaml";
 import cryptoLib from "crypto";
 import { version as symmetryCoreVersion } from "../package.json";
-import { ChatCompletionMessageParam, TokenJS } from "fluency.js";
+import { ChatCompletionMessageParam, TokenJS as FluencyJs } from "fluency.js";
 
 import { ConfigManager } from "./config";
 import { createMessage, safeParseJson } from "./utils";
@@ -14,7 +14,6 @@ import {
   Peer,
   ProviderMessage,
   InferenceRequest,
-  StreamMetrics,
   VersionMessage,
 } from "./types";
 import {
@@ -22,7 +21,6 @@ import {
   PROVIDER_HELLO_TIMEOUT,
   serverMessageKeys,
 } from "./constants";
-import { StreamMetricsCollector } from "./metrics";
 import { ConnectionManager } from "./connection-manager";
 import { CompletionStreaming, LLMProvider } from "fluency.js/dist/chat";
 
@@ -36,7 +34,7 @@ export class SymmetryClient {
   private _providerSwarm: Hyperswarm | null = null;
   private _serverPeer: Peer | null = null;
   private _serverSwarm: Hyperswarm | null = null;
-  private _tokenJs: TokenJS | undefined;
+  private _fluencyJs: FluencyJs | undefined;
 
   constructor(configPath: string) {
     logger.info(`🔗 Initializing client using config file: ${configPath}`);
@@ -120,7 +118,7 @@ export class SymmetryClient {
 
       const url = this.getProviderBaseUrl();
 
-      this._tokenJs = new TokenJS({
+      this._fluencyJs = new FluencyJs({
         baseURL: url,
         apiKey: this._config.get("apiKey"),
       });
@@ -128,7 +126,7 @@ export class SymmetryClient {
       logger.info(chalk.white(`🚀 Sending test request to ${url}`));
 
       try {
-        await this._tokenJs?.chat.completions.create({
+        await this._fluencyJs?.chat.completions.create({
           model: this._config.get("modelName"),
           messages: [
             { role: "user", content: "Hello, this is a test message." },
@@ -326,7 +324,7 @@ export class SymmetryClient {
   private async handleHealthCheckRequest(peer: Peer): Promise<void> {
     logger.info("🤖 Health check request received.");
 
-    this._tokenJs = new TokenJS({
+    this._fluencyJs = new FluencyJs({
       baseURL: this.getProviderBaseUrl(),
       apiKey: this._config.get("apiKey"),
     });
@@ -344,7 +342,7 @@ export class SymmetryClient {
     };
 
     try {
-      await this._tokenJs?.chat.completions.create(body);
+      await this._fluencyJs?.chat.completions.create(body);
       peer.write(createMessage(serverMessageKeys.healthCheck));
     } catch (error) {
       let errorMessage = "Health check failed";
@@ -372,56 +370,33 @@ export class SymmetryClient {
     data: ProviderMessage<InferenceRequest>,
     peer: Peer
   ): Promise<void> {
-    const streamMetricsCollector = new StreamMetricsCollector({
-      metricsInterval: 10,
-      maxTimeGap: 5000,
-      windowSize: 100,
-    });
-
     this._serverPeer?.write(createMessage(serverMessageKeys.inference));
 
     const messages = this.getMessagesWithSystem(data?.data.messages);
 
-    this._tokenJs = new TokenJS({
+    this._fluencyJs = new FluencyJs({
       baseURL: this.getProviderBaseUrl(),
       apiKey: this._config.get("apiKey"),
     });
 
-    const body: CompletionStreaming<LLMProvider> = {
-      model: this._config.get("modelName"),
-      messages: messages || undefined,
-      stream: true,
-      provider: "openai-compatible"
-    };
-
-    const metrics: StreamMetrics[] = [];
-    let completion = ""
-
     try {
-      const result = await this._tokenJs.chat.completions.create(body);
+      const result = await this._fluencyJs.chat.completions.create({
+        model: this._config.get("modelName"),
+        messages: messages || undefined,
+        stream: true,
+        provider: "openai-compatible"
+      });
+      
       for await (const part of result) {
-        const token = part.choices[0].delta.content;
-
-        if (token) {
-          const metric = await streamMetricsCollector.processToken(token);
-          if (metric) metrics.push(metric);
-          completion += token;
-          peer.write(JSON.stringify(part));
-        }
+        peer.write(JSON.stringify(part));
       }
 
-      this.sendRequestMetrics(streamMetricsCollector, peer);
       peer.write(
         createMessage(serverMessageKeys.inferenceEnded, data?.data.key)
       );
+
       await new Promise((resolve) => peer.once("drain", resolve));
   
-      if (
-        this._config.get("dataCollectionEnabled") &&
-        data.data.key === serverMessageKeys.inference
-      ) {
-        this.saveCompletion(completion, peer, data.data.messages);
-      }
     } catch (error) {
       let errorMessage = "An error occurred during inference";
       if (error instanceof Error) errorMessage = error.message;
@@ -434,38 +409,6 @@ export class SymmetryClient {
         })
       );
     } 
-  }
-
-  private sendRequestMetrics(metrics: StreamMetricsCollector, peer: Peer) {
-    this._serverPeer?.write(
-      createMessage(serverMessageKeys.sendMetrics, {
-        state: metrics.getMetricsState(),
-        peerId: peer.publicKey.toString("hex"),
-        timestamp: Date.now(),
-      })
-    );
-  }
-
-  private async saveCompletion(
-    completion: string,
-    peer: Peer,
-    messages: ChatCompletionMessageParam[]
-  ) {
-    fs.writeFile(
-      `${this._config.get("dataPath")}/${peer.publicKey.toString("hex")}-${
-        this._conversationIndex
-      }.json`,
-      JSON.stringify([
-        ...messages,
-        {
-          role: "assistant",
-          content: completion,
-        },
-      ]),
-      () => {
-        logger.info(`📝 Completion saved to file`);
-      }
-    );
   }
 }
 
