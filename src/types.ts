@@ -10,11 +10,8 @@ export interface ProviderConfig {
   apiModelsPath?: string;
   apiPort: number;
   apiProtocol: string;
-  dataCollectionEnabled: boolean;
-  maxConnections: number;
   modelName: string;
   name: string;
-  dataPath: string;
   serverKey: string;
   systemMessage: string;
   userSecret: string;

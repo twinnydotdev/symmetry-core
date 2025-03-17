@@ -21,9 +21,6 @@ export abstract class BaseProvider {
     apiHostname: "localhost",
     apiModelsPath: "/v1/models",
     apiBasePath: "/v1",
-    dataPath: path.join(os.homedir(), ".config", "symmetry", "data"),
-    dataCollectionEnabled: false,
-    maxConnections: 10,
     systemMessage: "You are a helpful AI assistant.",
     serverKey: crypto.randomBytes(32).toString("hex"),
     userSecret: crypto.randomBytes(16).toString("hex"),
@@ -79,7 +76,7 @@ export abstract class BaseProvider {
   protected async createConfig(server: Partial<ProviderConfig>): Promise<void> {
     const configDir = path.join(BaseProvider.DEFAULT_CONFIG_PATH);
     const dataDir = path.join(configDir, "data");
-    const config = this.generateConfig(server, dataDir);
+    const config = this.generateConfig(server);
 
     try {
       await fs.mkdir(configDir, { recursive: true });
@@ -99,13 +96,11 @@ export abstract class BaseProvider {
     }
   }
 
-  private generateConfig(server: Partial<ProviderConfig>, dataDir: string) {
+  private generateConfig(server: Partial<ProviderConfig>) {
     return {
       name: `symmetry-${server.name}`,
       public: true,
       maxConnections: 10,
-      dataCollectionEnabled: false,
-      dataPath: dataDir,
       apiHostname: "localhost",
       apiPort: server.apiPort,
       apiProtocol: "http",

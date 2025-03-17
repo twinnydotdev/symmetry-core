@@ -44,7 +44,6 @@ describe("Symmetry", () => {
     apiHostname: "test.api.com",
     apiPort: 443,
     apiBasePath: "/v1",
-    dataPath: "",
     apiProtocol: "https",
     apiKey: "test-api-key",
     modelName: "test-model",

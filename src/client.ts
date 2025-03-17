@@ -25,7 +25,6 @@ import { ConnectionManager } from "./connection-manager";
 import { CompletionStreaming, LLMProvider } from "fluency.js/dist/chat";
 
 export class SymmetryClient {
-  private _challenge: Buffer | null = null;
   private _config: ConfigManager;
   private _connectionManager: ConnectionManager | null = null;
   private _conversationIndex = 0;
@@ -46,9 +45,15 @@ export class SymmetryClient {
     const keyPair = crypto.keyPair(
       cryptoLib.createHash("sha256").update(userSecret).digest()
     );
-    this._providerSwarm = new Hyperswarm({
-      maxConnections: this._config.get("maxConnections"),
-    });
+
+    logger.info(`📁 Symmetry client initialized.`);
+
+    logger.info(
+      chalk.white(`🔑 Server key: ${this._config.get("serverKey")}`)
+    );
+    logger.info(chalk.white("🔗 Joining server, please wait."));
+    
+    this._providerSwarm = new Hyperswarm();
     this._discoveryKey = crypto.discoveryKey(keyPair.publicKey);
     const discovery = this._providerSwarm.join(this._discoveryKey, {
       server: true,
@@ -65,17 +70,7 @@ export class SymmetryClient {
       this.listeners(peer);
     });
 
-    logger.info(`📁 Symmetry client initialized.`);
-    logger.info(`🔑 Discovery key: ${this._discoveryKey.toString("hex")}`);
-
-    logger.info(
-      chalk.white(`🔑 Server key: ${this._config.get("serverKey")}`)
-    );
-    logger.info(chalk.white("🔗 Joining server, please wait."));
-    this.joinServer({
-      keyPair,
-      maxConnections: this._config.get("maxConnections"),
-    });
+    this.joinServer({ keyPair });
 
     process.on("SIGINT", async () => {
       await this._providerSwarm?.destroy();
@@ -164,14 +159,6 @@ export class SymmetryClient {
   handleConnection = (peer: Peer) => {
     this._serverPeer = peer;
 
-    this._challenge = crypto.randomBytes(32);
-
-    peer.write(
-      createMessage(serverMessageKeys.challenge, {
-        challenge: this._challenge,
-      })
-    );
-
     peer.write(
       createMessage(serverMessageKeys.join, {
         ...this._config.getAll(),
@@ -194,11 +181,6 @@ export class SymmetryClient {
 
       if (data && data.key) {
         switch (data.key) {
-          case serverMessageKeys.challenge:
-            this.handleServerVerification(
-              data.data as { message: string; signature: { data: string } }
-            );
-            break;
           case serverMessageKeys.versionMismatch: {
             const message = data.data as VersionMessage;
             logger.info(
@@ -242,36 +224,6 @@ export class SymmetryClient {
       );
     }
     return publicKey;
-  }
-
-  handleServerVerification(data: {
-    message: string;
-    signature: { data: string };
-  }) {
-    if (!this._challenge) {
-      console.log("No challenge set. Cannot verify.");
-      return;
-    }
-
-    const serverKeyHex = this._config.get("serverKey");
-    try {
-      const publicKey = this.getServerPublicKey(serverKeyHex);
-      const signatureBuffer = Buffer.from(data.signature.data, "base64");
-
-      const verified = crypto.verify(
-        this._challenge,
-        signatureBuffer,
-        publicKey
-      );
-
-      if (verified) {
-        logger.info(chalk.greenBright(`✅ Verification successful.`));
-      } else {
-        logger.error(`❌ Verification failed!`);
-      }
-    } catch (error) {
-      console.error("Error during verification:", error);
-    }
   }
 
   private listeners(peer: Peer): void {

@@ -19,7 +19,6 @@ declare module "hyperswarm" {
     maxPeers?: number;
     firewall?: (remotePublicKey: string) => boolean;
     dht?: any;
-    maxConnections: number;
   }
 
   export default class Hyperswarm extends EventEmitter {

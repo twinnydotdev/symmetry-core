@@ -28,7 +28,6 @@ export class ConfigManager {
       "apiHostname",
       "apiPort",
       "apiProtocol",
-      "dataPath",
       "modelName",
       "serverKey",
     ];
