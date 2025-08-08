@@ -109,7 +109,7 @@ export abstract class BaseProvider {
       systemMessage: "You are a helpful AI assistant.",
       serverKey:
         "4b4a9cc325d134dee6679e9407420023531fd7e96c563f6c5d00fd5549b77435",
-      userSecret: crypto.randomBytes(16).toString("hex"),
+      userSecret: crypto.randomBytes(32).toString("hex"),
     };
   }
 
