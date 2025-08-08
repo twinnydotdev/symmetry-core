@@ -23,7 +23,7 @@ export abstract class BaseProvider {
     apiBasePath: "/v1",
     systemMessage: "You are a helpful AI assistant.",
     serverKey: crypto.randomBytes(32).toString("hex"),
-    userSecret: crypto.randomBytes(16).toString("hex"),
+    userSecret: crypto.randomBytes(32).toString("hex"),
   };
 
   protected static async promptUser(question: string): Promise<string> {
